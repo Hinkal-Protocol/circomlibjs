@@ -1,5 +1,6 @@
 import chai from "chai";
 import { Scalar } from "ffjavascript";
+var {Buffer} = require('buffer');
 
 const assert = chai.assert;
 

@@ -1,5 +1,7 @@
 #circomlibjs
 
+It is Hinkal version of circomlibjs with global polyfills: process, Buffer
+
 `circomlibjs` is a Javascript library that provides programs to compute the witness of several circuits of `circomlib`.
 This library is used to make tests of circomlib circuits.
 
