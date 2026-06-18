@@ -1,7 +1,7 @@
 import { Scalar, utils } from "ffjavascript";
 import buildBabyJub from "./babyjub.js";
 import { buildPoseidon } from "./poseidon_wasm.js";
-import createBlakeHash from "blake-hash";
+import { blake512 } from "@noble/hashes/blake1.js";
 
 export default async function buildEddsa() {
   const babyJub = await buildBabyJub("bn128");
@@ -24,9 +24,7 @@ class Eddsa {
   }
 
   prv2pub(prv) {
-    const sBuff = this.pruneBuffer(
-      createBlakeHash("blake512").update(prv).digest().slice(0, 32),
-    );
+    const sBuff = this.pruneBuffer(blake512(prv).slice(0, 32));
     let s = utils.leBuff2int(sBuff);
     const A = this.babyJub.mulPointEscalar(
       this.babyJub.Base8,
@@ -37,9 +35,7 @@ class Eddsa {
 
   signPoseidon(prv, msg) {
     const F = this.babyJub.F;
-    const sBuff = this.pruneBuffer(
-      createBlakeHash("blake512").update(Buffer.from(prv)).digest(),
-    );
+    const sBuff = this.pruneBuffer(blake512(prv));
     const s = Scalar.fromRprLE(sBuff, 0, 32);
     const A = this.babyJub.mulPointEscalar(
       this.babyJub.Base8,
@@ -49,9 +45,7 @@ class Eddsa {
     const composeBuff = new Uint8Array(32 + msg.length);
     composeBuff.set(sBuff.slice(32), 0);
     F.toRprLE(composeBuff, 32, msg);
-    const rBuff = createBlakeHash("blake512")
-      .update(Buffer.from(composeBuff))
-      .digest();
+    const rBuff = blake512(composeBuff);
     let r = Scalar.mod(Scalar.fromRprLE(rBuff, 0, 64), this.babyJub.subOrder);
     const R8 = this.babyJub.mulPointEscalar(this.babyJub.Base8, r);
 
