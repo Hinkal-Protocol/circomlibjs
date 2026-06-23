@@ -18,10 +18,6 @@ const KEY_B = Buffer.from(
   "1111111111111111111111111111111111111111111111111111111111111111",
   "hex",
 );
-const KEY_C = Buffer.from(
-  "f00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafe0",
-  "hex",
-);
 
 describe("EdDSA js test", function () {
   let eddsa;
