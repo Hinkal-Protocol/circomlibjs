@@ -1,5 +1,5 @@
-import { CIRCOM_P } from './protocol.constants.js';
-import { mod, modInverse } from './bigint-math.utils.js';
+import { CIRCOM_P } from "./protocol.constants.js";
+import { mod, modInverse } from "./bigint-math.utils.js";
 
 const P = CIRCOM_P;
 
@@ -13,7 +13,7 @@ const F = {
   sub: (a, b) => mod(a - b),
   mul: (a, b) => mod(a * b),
   div: (a, b) => {
-    if (b === 0n) throw new Error('Division by zero in BabyJub field');
+    if (b === 0n) throw new Error("Division by zero in BabyJub field");
     return mod(a * modInverse(b));
   },
   toString: (a) => mod(a).toString(),
@@ -39,8 +39,8 @@ const toAffine = (point) => {
   return [F.mul(point.X, zInv), F.mul(point.Y, zInv)];
 };
 
-const A = F.e('168700');
-const D = F.e('168696');
+const A = F.e("168700");
+const D = F.e("168696");
 
 // Add two extended points (add-2008-hwcd; no per-step field inversions).
 const addExtended = (p1, p2) => {
@@ -92,8 +92,12 @@ export class BabyJubRN {
 
   // Standard BabyJub generator used by EdDSA (matches circomlibjs Base8).
   Base8 = [
-    F.e('5299619240641551281634865583518297030282874472190772894086521144482721001553'),
-    F.e('16950150798460657717958625567821834550301663161624707787222815936182638968203'),
+    F.e(
+      "5299619240641551281634865583518297030282874472190772894086521144482721001553",
+    ),
+    F.e(
+      "16950150798460657717958625567821834550301663161624707787222815936182638968203",
+    ),
   ];
 
   // Add two affine curve points.

@@ -8,241 +8,480 @@ const assert = chai.assert;
 // const bigInt = require("big-integer");
 
 function buff2hex(buff) {
-    function i2hex(i) {
-      return ('0' + i.toString(16)).slice(-2);
-    }
-    return Array.from(buff).map(i2hex).join('');
+  function i2hex(i) {
+    return ("0" + i.toString(16)).slice(-2);
+  }
+  return Array.from(buff).map(i2hex).join("");
 }
 
 describe("Baby Jub js test", function () {
-    let babyjub;
-    let babyjubRN;
-    this.timeout(100000);
+  let babyjub;
+  let babyjubRN;
+  this.timeout(100000);
 
-    const toRN = (p) => [babyjub.F.toObject(p[0]), babyjub.F.toObject(p[1])];
+  const toRN = (p) => [babyjub.F.toObject(p[0]), babyjub.F.toObject(p[1])];
 
-    before(async () => {
-        babyjub = await buildBabyjub();
-        babyjubRN = new BabyJubRN();
-    });
+  before(async () => {
+    babyjub = await buildBabyjub();
+    babyjubRN = new BabyJubRN();
+  });
 
-    it("Should add point (0,1) and (0,1)", () => {
+  it("Should add point (0,1) and (0,1)", () => {
+    const p1 = [babyjub.F.e(0), babyjub.F.e(1)];
+    const p2 = [babyjub.F.e(0), babyjub.F.e(1)];
 
-        const p1 = [
-            babyjub.F.e(0),
-            babyjub.F.e(1)];
-        const p2 = [
-            babyjub.F.e(0),
-            babyjub.F.e(1)
-        ];
+    const out = babyjub.addPoint(p1, p2);
 
-        const out = babyjub.addPoint(p1, p2);
+    const outRN = babyjubRN.addPoint(toRN(p1), toRN(p2));
 
-        
-        const outRN = babyjubRN.addPoint(toRN(p1), toRN(p2));
-        
-        assert(babyjub.F.eq(out[0], babyjub.F.zero));
-        assert(babyjub.F.eq(out[1], babyjub.F.one));
+    assert(babyjub.F.eq(out[0], babyjub.F.zero));
+    assert(babyjub.F.eq(out[1], babyjub.F.one));
 
-        assert.equal(outRN[0], babyjubRN.F.zero);
-        assert.equal(outRN[1], babyjubRN.F.one);
-    });
+    assert.equal(outRN[0], babyjubRN.F.zero);
+    assert.equal(outRN[1], babyjubRN.F.one);
+  });
 
-    it("Should base be 8*generator", () => {
-        let res;
-        res = babyjub.addPoint(babyjub.Generator, babyjub.Generator);
-        res = babyjub.addPoint(res, res);
-        res = babyjub.addPoint(res, res);
+  it("Should base be 8*generator", () => {
+    let res;
+    res = babyjub.addPoint(babyjub.Generator, babyjub.Generator);
+    res = babyjub.addPoint(res, res);
+    res = babyjub.addPoint(res, res);
 
-        let resRN = babyjubRN.addPoint(toRN(babyjub.Generator), toRN(babyjub.Generator));
-        resRN = babyjubRN.addPoint(resRN, resRN);
-        resRN = babyjubRN.addPoint(resRN, resRN);
+    let resRN = babyjubRN.addPoint(
+      toRN(babyjub.Generator),
+      toRN(babyjub.Generator),
+    );
+    resRN = babyjubRN.addPoint(resRN, resRN);
+    resRN = babyjubRN.addPoint(resRN, resRN);
 
-        assert.equal(resRN[0], toRN(babyjub.Base8)[0]);
-        assert.equal(resRN[1], toRN(babyjub.Base8)[1]);
+    assert.equal(resRN[0], toRN(babyjub.Base8)[0]);
+    assert.equal(resRN[1], toRN(babyjub.Base8)[1]);
 
-        assert(babyjub.F.eq(res[0], babyjub.Base8[0]));
-        assert(babyjub.F.eq(res[1], babyjub.Base8[1]));
-    });
+    assert(babyjub.F.eq(res[0], babyjub.Base8[0]));
+    assert(babyjub.F.eq(res[1], babyjub.Base8[1]));
+  });
 
-    it("Should add 2 same numbers", () => {
+  it("Should add 2 same numbers", () => {
+    const p1 = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
+    const p2 = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
 
-        const p1 = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
-        const p2 = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
+    const outRN = babyjubRN.addPoint(toRN(p1), toRN(p2));
 
-        const outRN = babyjubRN.addPoint(toRN(p1), toRN(p2));
+    assert.equal(
+      outRN[0],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+        ),
+      ),
+    );
+    assert.equal(
+      outRN[1],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+        ),
+      ),
+    );
 
-        assert.equal(outRN[0], babyjub.F.toObject(babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365")));
-        assert.equal(outRN[1], babyjub.F.toObject(babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889")));    
+    const out = babyjub.addPoint(p1, p2);
+    assert(
+      babyjub.F.eq(
+        out[0],
+        babyjub.F.e(
+          "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        out[1],
+        babyjub.F.e(
+          "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+        ),
+      ),
+    );
+  });
 
-        const out = babyjub.addPoint(p1, p2);
-        assert(babyjub.F.eq(out[0], babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365")));
-        assert(babyjub.F.eq(out[1], babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889")));
-    });
+  it("Should add 2 different numbers", () => {
+    const p1 = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
+    const p2 = [
+      babyjub.F.e(
+        "16540640123574156134436876038791482806971768689494387082833631921987005038935",
+      ),
+      babyjub.F.e(
+        "20819045374670962167435360035096875258406992893633759881276124905556507972311",
+      ),
+    ];
 
-    it("Should add 2 different numbers", () => {
+    const outRN = babyjubRN.addPoint(toRN(p1), toRN(p2));
 
-        const p1 = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
-        const p2 = [
-            babyjub.F.e("16540640123574156134436876038791482806971768689494387082833631921987005038935"),
-            babyjub.F.e("20819045374670962167435360035096875258406992893633759881276124905556507972311"),
-        ];
+    assert.equal(
+      outRN[0],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "7916061937171219682591368294088513039687205273691143098332585753343424131937",
+        ),
+      ),
+    );
+    assert.equal(
+      outRN[1],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "14035240266687799601661095864649209771790948434046947201833777492504781204499",
+        ),
+      ),
+    );
 
-        const outRN = babyjubRN.addPoint(toRN(p1), toRN(p2));
+    const out = babyjub.addPoint(p1, p2);
+    assert(
+      babyjub.F.eq(
+        out[0],
+        babyjub.F.e(
+          "7916061937171219682591368294088513039687205273691143098332585753343424131937",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        out[1],
+        babyjub.F.e(
+          "14035240266687799601661095864649209771790948434046947201833777492504781204499",
+        ),
+      ),
+    );
+  });
 
-        assert.equal(outRN[0], babyjub.F.toObject(babyjub.F.e("7916061937171219682591368294088513039687205273691143098332585753343424131937")));
-        assert.equal(outRN[1], babyjub.F.toObject(babyjub.F.e("14035240266687799601661095864649209771790948434046947201833777492504781204499")));    
+  it("should mulPointEscalar 0", () => {
+    const p = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
 
-        const out = babyjub.addPoint(p1, p2);
-        assert(babyjub.F.eq(out[0], babyjub.F.e("7916061937171219682591368294088513039687205273691143098332585753343424131937")));
-        assert(babyjub.F.eq(out[1], babyjub.F.e("14035240266687799601661095864649209771790948434046947201833777492504781204499")));
+    const r = babyjub.mulPointEscalar(p, 3);
+    let r2 = babyjub.addPoint(p, p);
+    r2 = babyjub.addPoint(r2, p);
+    assert(babyjub.F.eq(r2[0], r[0]));
+    assert(babyjub.F.eq(r2[1], r[1]));
+    assert(
+      babyjub.F.eq(
+        r[0],
+        babyjub.F.e(
+          "19372461775513343691590086534037741906533799473648040012278229434133483800898",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        r[1],
+        babyjub.F.e(
+          "9458658722007214007257525444427903161243386465067105737478306991484593958249",
+        ),
+      ),
+    );
 
-    });
+    const pRN = toRN(p);
+    const rRN = babyjubRN.mulPointEscalar(pRN, 3);
+    let r2RN = babyjubRN.addPoint(pRN, pRN);
+    r2RN = babyjubRN.addPoint(r2RN, pRN);
+    assert.equal(r2RN[0], rRN[0]);
+    assert.equal(r2RN[1], rRN[1]);
+    assert.equal(
+      rRN[0],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "19372461775513343691590086534037741906533799473648040012278229434133483800898",
+        ),
+      ),
+    );
+    assert.equal(
+      rRN[1],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "9458658722007214007257525444427903161243386465067105737478306991484593958249",
+        ),
+      ),
+    );
+  });
 
-    it("should mulPointEscalar 0", () => {
-        const p = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
+  it("should mulPointEscalar 1", () => {
+    const p = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
 
-        const r = babyjub.mulPointEscalar(p, 3);
-        let r2 = babyjub.addPoint(p, p);
-        r2 = babyjub.addPoint(r2, p);
-        assert(babyjub.F.eq(r2[0], r[0]));
-        assert(babyjub.F.eq(r2[1], r[1]));
-        assert(babyjub.F.eq(r[0], babyjub.F.e("19372461775513343691590086534037741906533799473648040012278229434133483800898")));
-        assert(babyjub.F.eq(r[1], babyjub.F.e("9458658722007214007257525444427903161243386465067105737478306991484593958249")));
+    const r = babyjub.mulPointEscalar(
+      p,
+      Scalar.fromString(
+        "14035240266687799601661095864649209771790948434046947201833777492504781204499",
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        r[0],
+        babyjub.F.e(
+          "17070357974431721403481313912716834497662307308519659060910483826664480189605",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        r[1],
+        babyjub.F.e(
+          "4014745322800118607127020275658861516666525056516280575712425373174125159339",
+        ),
+      ),
+    );
 
-        const pRN = toRN(p);
-        const rRN = babyjubRN.mulPointEscalar(pRN, 3);
-        let r2RN = babyjubRN.addPoint(pRN, pRN);
-        r2RN = babyjubRN.addPoint(r2RN, pRN);
-        assert.equal(r2RN[0], rRN[0]);
-        assert.equal(r2RN[1], rRN[1]);
-        assert.equal(rRN[0], babyjub.F.toObject(babyjub.F.e("19372461775513343691590086534037741906533799473648040012278229434133483800898")));
-        assert.equal(rRN[1], babyjub.F.toObject(babyjub.F.e("9458658722007214007257525444427903161243386465067105737478306991484593958249")));
-    });
+    const pRN = toRN(p);
+    const rRN = babyjubRN.mulPointEscalar(
+      pRN,
+      Scalar.fromString(
+        "14035240266687799601661095864649209771790948434046947201833777492504781204499",
+      ),
+    );
+    assert.equal(
+      rRN[0],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "17070357974431721403481313912716834497662307308519659060910483826664480189605",
+        ),
+      ),
+    );
+    assert.equal(
+      rRN[1],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "4014745322800118607127020275658861516666525056516280575712425373174125159339",
+        ),
+      ),
+    );
+  });
 
-    it("should mulPointEscalar 1", () => {
-        const p = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
+  it("should mulPointEscalar 2", () => {
+    const p = [
+      babyjub.F.e(
+        "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+      ),
+      babyjub.F.e(
+        "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+      ),
+    ];
 
-        const r = babyjub.mulPointEscalar(p, Scalar.fromString("14035240266687799601661095864649209771790948434046947201833777492504781204499"));
-        assert(babyjub.F.eq(r[0], babyjub.F.e("17070357974431721403481313912716834497662307308519659060910483826664480189605")));
-        assert(babyjub.F.eq(r[1], babyjub.F.e("4014745322800118607127020275658861516666525056516280575712425373174125159339")));
+    const r = babyjub.mulPointEscalar(
+      p,
+      Scalar.fromString(
+        "20819045374670962167435360035096875258406992893633759881276124905556507972311",
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        r[0],
+        babyjub.F.e(
+          "13563888653650925984868671744672725781658357821216877865297235725727006259983",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        r[1],
+        babyjub.F.e(
+          "8442587202676550862664528699803615547505326611544120184665036919364004251662",
+        ),
+      ),
+    );
 
-        const pRN = toRN(p);
-        const rRN = babyjubRN.mulPointEscalar(pRN, Scalar.fromString("14035240266687799601661095864649209771790948434046947201833777492504781204499"));
-        assert.equal(rRN[0], babyjub.F.toObject(babyjub.F.e("17070357974431721403481313912716834497662307308519659060910483826664480189605")));
-        assert.equal(rRN[1], babyjub.F.toObject(babyjub.F.e("4014745322800118607127020275658861516666525056516280575712425373174125159339")));
-    });
+    const pRN = toRN(p);
+    const rRN = babyjubRN.mulPointEscalar(
+      pRN,
+      Scalar.fromString(
+        "20819045374670962167435360035096875258406992893633759881276124905556507972311",
+      ),
+    );
+    assert.equal(
+      rRN[0],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "13563888653650925984868671744672725781658357821216877865297235725727006259983",
+        ),
+      ),
+    );
+    assert.equal(
+      rRN[1],
+      babyjub.F.toObject(
+        babyjub.F.e(
+          "8442587202676550862664528699803615547505326611544120184665036919364004251662",
+        ),
+      ),
+    );
+  });
 
-    it("should mulPointEscalar 2", () => {
-        const p = [
-            babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365"),
-            babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889"),
-        ];
+  it("should inCurve 1", () => {
+    const p = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
+    assert(babyjub.inCurve(p));
 
-        const r = babyjub.mulPointEscalar(p, Scalar.fromString("20819045374670962167435360035096875258406992893633759881276124905556507972311"));
-        assert(babyjub.F.eq(r[0], babyjub.F.e("13563888653650925984868671744672725781658357821216877865297235725727006259983")));
-        assert(babyjub.F.eq(r[1], babyjub.F.e("8442587202676550862664528699803615547505326611544120184665036919364004251662")));
+    // const pRN = toRN(p);
+    // assert(babyjubRN.inCurve(pRN));
+  });
 
-        const pRN = toRN(p);
-        const rRN = babyjubRN.mulPointEscalar(pRN, Scalar.fromString("20819045374670962167435360035096875258406992893633759881276124905556507972311"));
-        assert.equal(rRN[0], babyjub.F.toObject(babyjub.F.e("13563888653650925984868671744672725781658357821216877865297235725727006259983")));
-        assert.equal(rRN[1], babyjub.F.toObject(babyjub.F.e("8442587202676550862664528699803615547505326611544120184665036919364004251662")));
-    });
+  it("should inCurve 2", () => {
+    const p = [
+      babyjub.F.e(
+        "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+      ),
+      babyjub.F.e(
+        "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+      ),
+    ];
+    assert(babyjub.inCurve(p));
 
-    it("should inCurve 1", () => {
-        const p = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
-        assert(babyjub.inCurve(p));
+    // const pRN = toRN(p);
+    // assert(babyjubRN.inCurve(pRN));
+  });
 
-        // const pRN = toRN(p);
-        // assert(babyjubRN.inCurve(pRN));
-    });
+  it("should inSubgroup 1", () => {
+    const p = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
+    assert(babyjub.inSubgroup(p));
 
-    it("should inCurve 2", () => {
-        const p = [
-            babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365"),
-            babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889"),
-        ];
-        assert(babyjub.inCurve(p));
+    // const pRN = toRN(p);
+    // assert(babyjubRN.inSubgroup(pRN));
+  });
 
-        // const pRN = toRN(p);
-        // assert(babyjubRN.inCurve(pRN));
-    });
+  it("should inSubgroup 2", () => {
+    const p = [
+      babyjub.F.e(
+        "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+      ),
+      babyjub.F.e(
+        "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+      ),
+    ];
+    assert(babyjub.inSubgroup(p));
 
-    it("should inSubgroup 1", () => {
-        const p = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
-        assert(babyjub.inSubgroup(p));
+    // const pRN = toRN(p);
+    // assert(babyjubRN.inSubgroup(pRN));
+  });
 
-        // const pRN = toRN(p);
-        // assert(babyjubRN.inSubgroup(pRN));
-    });
+  it("should packPoint - unpackPoint 1", () => {
+    const p = [
+      babyjub.F.e(
+        "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+      ),
+      babyjub.F.e(
+        "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+      ),
+    ];
+    const buf = babyjub.packPoint(p);
+    assert.equal(
+      buff2hex(buf),
+      "53b81ed5bffe9545b54016234682e7b2f699bd42a5e9eae27ff4051bc698ce85",
+    );
+    const p2 = babyjub.unpackPoint(buf);
+    assert(
+      babyjub.F.eq(
+        p2[0],
+        babyjub.F.e(
+          "17777552123799933955779906779655732241715742912184938656739573121738514868268",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        p2[1],
+        babyjub.F.e(
+          "2626589144620713026669568689430873010625803728049924121243784502389097019475",
+        ),
+      ),
+    );
 
-    it("should inSubgroup 2", () => {
-        const p = [
-            babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365"),
-            babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889"),
-        ];
-        assert(babyjub.inSubgroup(p));
+    // const pRN = toRN(p);
+    // const bufRN = babyjubRN.packPoint(pRN);
+    // assert.equal(buff2hex(bufRN), "53b81ed5bffe9545b54016234682e7b2f699bd42a5e9eae27ff4051bc698ce85");
+    // const p2RN = babyjubRN.unpackPoint(bufRN);
+    // assert.equal(p2RN[0], babyjub.F.toObject(babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268")));
+    // assert.equal(p2RN[1], babyjub.F.toObject(babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475")));
+  });
 
-        // const pRN = toRN(p);
-        // assert(babyjubRN.inSubgroup(pRN));
-    });
+  it("should packPoint - unpackPoint 2", () => {
+    const p = [
+      babyjub.F.e(
+        "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+      ),
+      babyjub.F.e(
+        "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+      ),
+    ];
+    const buf = babyjub.packPoint(p);
+    assert.equal(
+      buff2hex(buf),
+      "e114eb17eddf794f063a68fecac515e3620e131976108555735c8b0773929709",
+    );
+    const p2 = babyjub.unpackPoint(buf);
+    assert(
+      babyjub.F.eq(
+        p2[0],
+        babyjub.F.e(
+          "6890855772600357754907169075114257697580319025794532037257385534741338397365",
+        ),
+      ),
+    );
+    assert(
+      babyjub.F.eq(
+        p2[1],
+        babyjub.F.e(
+          "4338620300185947561074059802482547481416142213883829469920100239455078257889",
+        ),
+      ),
+    );
 
-    it("should packPoint - unpackPoint 1", () => {
-        const p = [
-            babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268"),
-            babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475"),
-        ];
-        const buf = babyjub.packPoint(p);
-        assert.equal(buff2hex(buf), "53b81ed5bffe9545b54016234682e7b2f699bd42a5e9eae27ff4051bc698ce85");
-        const p2 = babyjub.unpackPoint(buf);
-        assert(babyjub.F.eq(p2[0], babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268")));
-        assert(babyjub.F.eq(p2[1], babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475")));
-
-        // const pRN = toRN(p);
-        // const bufRN = babyjubRN.packPoint(pRN);
-        // assert.equal(buff2hex(bufRN), "53b81ed5bffe9545b54016234682e7b2f699bd42a5e9eae27ff4051bc698ce85");
-        // const p2RN = babyjubRN.unpackPoint(bufRN);
-        // assert.equal(p2RN[0], babyjub.F.toObject(babyjub.F.e("17777552123799933955779906779655732241715742912184938656739573121738514868268")));
-        // assert.equal(p2RN[1], babyjub.F.toObject(babyjub.F.e("2626589144620713026669568689430873010625803728049924121243784502389097019475")));
-    });
-
-    it("should packPoint - unpackPoint 2", () => {
-        const p = [
-            babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365"),
-            babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889"),
-        ];
-        const buf = babyjub.packPoint(p);
-        assert.equal(buff2hex(buf), "e114eb17eddf794f063a68fecac515e3620e131976108555735c8b0773929709");
-        const p2 = babyjub.unpackPoint(buf);
-        assert(babyjub.F.eq(p2[0], babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365")));
-        assert(babyjub.F.eq(p2[1], babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889")));
-
-        // const pRN = toRN(p);
-        // const bufRN = babyjubRN.packPoint(pRN);
-        // assert.equal(buff2hex(bufRN), "e114eb17eddf794f063a68fecac515e3620e131976108555735c8b0773929709");
-        // const p2RN = babyjubRN.unpackPoint(bufRN);
-        // assert.equal(p2RN[0], babyjub.F.toObject(babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365")));
-        // assert.equal(p2RN[1], babyjub.F.toObject(babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889")));
-    });
+    // const pRN = toRN(p);
+    // const bufRN = babyjubRN.packPoint(pRN);
+    // assert.equal(buff2hex(bufRN), "e114eb17eddf794f063a68fecac515e3620e131976108555735c8b0773929709");
+    // const p2RN = babyjubRN.unpackPoint(bufRN);
+    // assert.equal(p2RN[0], babyjub.F.toObject(babyjub.F.e("6890855772600357754907169075114257697580319025794532037257385534741338397365")));
+    // assert.equal(p2RN[1], babyjub.F.toObject(babyjub.F.e("4338620300185947561074059802482547481416142213883829469920100239455078257889")));
+  });
 });

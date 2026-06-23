@@ -1,4 +1,4 @@
-import { CIRCOM_P } from './protocol.constants.js';
+import { CIRCOM_P } from "./protocol.constants.js";
 
 // Reduce value into [0, m); handles negative inputs.
 export const mod = (value, m = CIRCOM_P) => {
@@ -13,7 +13,7 @@ export const modInverse = (value, m = CIRCOM_P) => {
   let low = mod(value, m);
   let high = m;
 
-  if (low === 0n) throw new Error('Division by zero');
+  if (low === 0n) throw new Error("Division by zero");
 
   while (low > 1n) {
     const remainder = high % low;
