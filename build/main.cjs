@@ -2,6 +2,26 @@
 
 var ffjavascript = require('ffjavascript');
 var blake1_js = require('@noble/hashes/blake1.js');
+var poseidonLite = require('poseidon-lite');
+
+function _interopNamespaceDefault(e) {
+    var n = Object.create(null);
+    if (e) {
+        Object.keys(e).forEach(function (k) {
+            if (k !== 'default') {
+                var d = Object.getOwnPropertyDescriptor(e, k);
+                Object.defineProperty(n, k, d.get ? d : {
+                    enumerable: true,
+                    get: function () { return e[k]; }
+                });
+            }
+        });
+    }
+    n.default = e;
+    return Object.freeze(n);
+}
+
+var poseidonLite__namespace = /*#__PURE__*/_interopNamespaceDefault(poseidonLite);
 
 async function buildBabyJub() {
     const bn128 = await ffjavascript.getCurveFromName("bn128", true);
@@ -24948,7 +24968,7 @@ var poseidonConstants = {
  ]
 };
 
-async function buildPoseidon() {
+async function buildPoseidon$1() {
     const bn128 = await ffjavascript.getCurveFromName("bn128", true, buildPoseidonWasm);
 
     const F = bn128.Fr;
@@ -25379,7 +25399,7 @@ function buildPoseidonWasm(module) {
 
 async function buildEddsa() {
   const babyJub = await buildBabyJub();
-  const poseidon = await buildPoseidon();
+  const poseidon = await buildPoseidon$1();
   return new Eddsa(babyJub, poseidon);
 }
 
@@ -25474,7 +25494,270 @@ class Eddsa {
   }
 }
 
+const CIRCOM_P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+
+// Reduce value into [0, m); handles negative inputs.
+const mod = (value, m = CIRCOM_P) => {
+  const result = value % m;
+  return result >= 0n ? result : result + m;
+};
+
+// Modular inverse via extended Euclidean algorithm (a^-1 mod m).
+const modInverse = (value, m = CIRCOM_P) => {
+  let lm = 1n;
+  let hm = 0n;
+  let low = mod(value, m);
+  let high = m;
+
+  if (low === 0n) throw new Error('Division by zero');
+
+  while (low > 1n) {
+    const remainder = high % low;
+    const quotient = high / low;
+    high = low;
+    low = remainder;
+    const nm = hm - lm * quotient;
+    hm = lm;
+    lm = nm;
+  }
+
+  return lm < 0n ? lm + m : lm;
+};
+
+const P = CIRCOM_P;
+
+// BabyJub base-field arithmetic over CIRCOM_P (same semantics as circomlibjs F).
+const F = {
+  p: P,
+  zero: 0n,
+  one: 1n,
+  e: (v) => mod(BigInt(v)),
+  add: (a, b) => mod(a + b),
+  sub: (a, b) => mod(a - b),
+  mul: (a, b) => mod(a * b),
+  div: (a, b) => {
+    if (b === 0n) throw new Error('Division by zero in BabyJub field');
+    return mod(a * modInverse(b));
+  },
+  toString: (a) => mod(a).toString(),
+};
+
+/**
+ * @typedef {{ X: bigint, Y: bigint, Z: bigint, T: bigint }} ExtPoint
+ */
+
+// Neutral element in extended coordinates (affine identity 0, 1).
+const IDENTITY = { X: F.zero, Y: F.one, Z: F.one, T: F.zero };
+
+// Embed an affine (x, y) point into extended twisted Edwards form.
+const toExtended = (affine) => {
+  const x = F.e(affine[0]);
+  const y = F.e(affine[1]);
+  return { X: x, Y: y, Z: F.one, T: F.mul(x, y) };
+};
+
+// Project an extended point back to affine (x, y) coordinates.
+const toAffine = (point) => {
+  const zInv = modInverse(point.Z);
+  return [F.mul(point.X, zInv), F.mul(point.Y, zInv)];
+};
+
+const A = F.e('168700');
+const D = F.e('168696');
+
+// Add two extended points (add-2008-hwcd; no per-step field inversions).
+const addExtended = (p1, p2) => {
+  const a = F.mul(p1.X, p2.X);
+  const b = F.mul(p1.Y, p2.Y);
+  const c = F.mul(F.mul(p1.T, p2.T), D);
+  const d = F.mul(p1.Z, p2.Z);
+  const e = F.sub(F.mul(F.add(p1.X, p1.Y), F.add(p2.X, p2.Y)), F.add(a, b));
+  const f = F.sub(d, c);
+  const g = F.add(d, c);
+  const h = F.sub(b, F.mul(A, a));
+  return {
+    X: F.mul(e, f),
+    Y: F.mul(g, h),
+    T: F.mul(e, h),
+    Z: F.mul(f, g),
+  };
+};
+
+// Double an extended point (dbl-2008-hwcd; no per-step field inversions).
+const doubleExtended = (p) => {
+  const a = F.mul(p.X, p.X);
+  const b = F.mul(p.Y, p.Y);
+  const c = F.mul(F.mul(p.Z, p.Z), 2n);
+  const d = F.mul(A, a);
+  const e = F.sub(F.mul(F.add(p.X, p.Y), F.add(p.X, p.Y)), F.add(a, b));
+  const g = F.add(d, b);
+  const f = F.sub(g, c);
+  const h = F.sub(d, b);
+  return {
+    X: F.mul(e, f),
+    Y: F.mul(g, h),
+    T: F.mul(e, h),
+    Z: F.mul(f, g),
+  };
+};
+
+// Pure-JS BabyJub curve used on React Native (circomlibjs uses WASM instead).
+class BabyJubRN {
+  static A = A;
+
+  static D = D;
+
+  F = F;
+
+  A = A;
+
+  D = D;
+
+  // Standard BabyJub generator used by EdDSA (matches circomlibjs Base8).
+  Base8 = [
+    F.e('5299619240641551281634865583518297030282874472190772894086521144482721001553'),
+    F.e('16950150798460657717958625567821834550301663161624707787222815936182638968203'),
+  ];
+
+  // Add two affine curve points.
+  addPoint(a, b) {
+    return toAffine(addExtended(toExtended(a), toExtended(b)));
+  }
+
+  // Scalar multiplication: returns e * base (double-and-add in extended coords).
+  mulPointEscalar(base, e) {
+    let res = IDENTITY;
+    let exp = toExtended(base);
+    let rem = BigInt(e);
+
+    while (rem !== 0n) {
+      if (rem % 2n === 1n) res = addExtended(res, exp);
+      exp = doubleExtended(exp);
+      rem /= 2n;
+    }
+
+    return toAffine(res);
+  }
+}
+
+const toBigInt = (v) => {
+    switch (typeof v) {
+      case 'bigint':  return v;
+      case 'boolean': return v ? 1n : 0n;
+      case 'number':
+        if (!Number.isInteger(v)) throw new TypeError(`Poseidon: non-integer Number ${v}`);
+        return BigInt(v);
+      case 'string': {
+        try { return BigInt(v.trim()); }
+        catch { throw new TypeError(`Poseidon: cannot parse string "${v}" as an integer`); }
+      }
+      default:
+        throw new TypeError(`Poseidon.F: unsupported value of type ${typeof v}`);
+    }
+  };
+
+// poseidon-lite exposes `poseidon1`..`poseidon16`; wrap them in a `buildPoseidon`-shaped
+// factory (matching the WASM reference) so callers — and the existing
+// `poseidon.F.toString(...)` pattern — keep working on RN.
+const buildPoseidon = () => {
+  const poseidon = (inputs, initState = 0, nOut = 1) => {
+    const fn = poseidonLite__namespace[`poseidon${inputs.length}`];
+    if (!fn) throw new Error(`Poseidon: arity ${inputs.length} not supported (1..16)`);
+    const formattedInputs = inputs.map((v) => toBigInt(v));
+
+    if (nOut > 1) {
+      const results = fn(formattedInputs, nOut);
+      return results.map(v => BigInt(v));
+    }
+
+    const res = fn(formattedInputs);
+    return BigInt(res);
+  };
+  poseidon.F = {
+    toString: (v) => toBigInt(v).toString(),
+    e: (v) => toBigInt(v),
+    eq: (a, b) => toBigInt(a) === toBigInt(b),
+  };
+  return poseidon;
+};
+
+/* eslint-disable no-bitwise */
+// React Native port of circomlibjs-hinkal-fork/src/eddsa.js (Poseidon EdDSA over BabyJubJub).
+
+const BABYJUB_ORDER = 21888242871839275222246405745257275088614511777268538073601725287587578984328n;
+const SUB_ORDER = BABYJUB_ORDER / 8n;
+
+const leBuff2int = (buff, offset = 0, length = buff.length - offset) => {
+  let result = 0n;
+  for (let i = length - 1; i >= 0; i -= 1) {
+    result = (result << 8n) + BigInt(buff[offset + i]);
+  }
+  return result;
+};
+
+const toRprLE = (buff, offset, value, length) => {
+  let v = mod(value);
+  for (let i = 0; i < length; i += 1) {
+    buff[offset + i] = Number(v & 0xffn);
+    v >>= 8n;
+  }
+};
+
+const modSubOrder = (value) => mod(value, SUB_ORDER);
+
+const pruneBuffer = (buff) => {
+  const out = new Uint8Array(buff);
+  out[0] = out[0] & 0xf8;
+  out[31] = out[31] & 0x7f;
+  out[31] = out[31] | 0x40;
+  return out;
+};
+
+/**
+ * @typedef {((inputs: bigint[]) => bigint) & { F: { toString: (v: bigint | number | string) => string } }} PoseidonFn
+ */
+
+class EddsaRN {
+  constructor(babyJub, poseidon) {
+    this.babyJub = babyJub;
+    this.poseidon = poseidon;
+  }
+
+  prv2pub(prv) {
+    const sBuff = pruneBuffer(blake1_js.blake512(prv).slice(0, 32));
+    const s = leBuff2int(sBuff, 0, 32);
+    return this.babyJub.mulPointEscalar(this.babyJub.Base8, s / 8n);
+  }
+
+  signPoseidon(prv, msg) {
+    const sBuff = pruneBuffer(blake1_js.blake512(prv));
+    const s = leBuff2int(sBuff, 0, 32);
+    const A = this.babyJub.mulPointEscalar(this.babyJub.Base8, s / 8n);
+
+    const composeBuff = new Uint8Array(64);
+    composeBuff.set(sBuff.slice(32), 0);
+    toRprLE(composeBuff, 32, msg, 32);
+
+    const rBuff = blake1_js.blake512(composeBuff);
+    const r = modSubOrder(leBuff2int(rBuff, 0, 64));
+    const R8 = this.babyJub.mulPointEscalar(this.babyJub.Base8, r);
+
+    const hm = this.poseidon([R8[0], R8[1], A[0], A[1], msg]);
+    const hms = mod(BigInt(this.poseidon.F.toString(hm)));
+    const S = modSubOrder(r + modSubOrder(hms * s));
+
+    return { R8, S };
+  }
+}
+
+const buildEddsaRN = async () => {
+  return new EddsaRN(new BabyJubRN(), buildPoseidon());
+};
+
+exports.BabyJubRN = BabyJubRN;
 exports.buildBabyjub = buildBabyJub;
 exports.buildEddsa = buildEddsa;
-exports.buildPoseidon = buildPoseidon;
+exports.buildEddsaRN = buildEddsaRN;
+exports.buildPoseidon = buildPoseidon$1;
+exports.buildPoseidonRN = buildPoseidon;
 exports.buildPoseidonWasm = buildPoseidonWasm;
