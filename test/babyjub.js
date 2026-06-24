@@ -1,7 +1,7 @@
 import chai from "chai";
 import buildBabyjub from "../src/babyjub.js";
 import { Scalar } from "ffjavascript";
-import { BabyJubRN } from "../src/babyjubRN.js";
+import { buildBabyJubRN } from "../src/babyjubRN.js";
 
 const assert = chai.assert;
 
@@ -23,7 +23,7 @@ describe("Baby Jub js test", function () {
 
   before(async () => {
     babyjub = await buildBabyjub();
-    babyjubRN = new BabyJubRN();
+    babyjubRN = buildBabyJubRN();
   });
 
   it("Should add point (0,1) and (0,1)", () => {

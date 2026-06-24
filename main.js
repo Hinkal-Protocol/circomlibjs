@@ -6,6 +6,6 @@ export { buildPoseidon, buildPoseidonWasm } from "./src/poseidon_wasm.js";
 
 export { buildEddsaRN } from "./src/EddsaRN.js";
 
-export { BabyJubRN } from "./src/babyjubRN.js";
+export { buildBabyJubRN } from "./src/babyjubRN.js";
 
 export { buildPoseidon as buildPoseidonRN } from "./src/poseidonRN.js";

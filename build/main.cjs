@@ -25494,7 +25494,8 @@ class Eddsa {
   }
 }
 
-const CIRCOM_P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+const CIRCOM_P =
+  21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
 // Reduce value into [0, m); handles negative inputs.
 const mod = (value, m = CIRCOM_P) => {
@@ -25509,7 +25510,7 @@ const modInverse = (value, m = CIRCOM_P) => {
   let low = mod(value, m);
   let high = m;
 
-  if (low === 0n) throw new Error('Division by zero');
+  if (low === 0n) throw new Error("Division by zero");
 
   while (low > 1n) {
     const remainder = high % low;
@@ -25536,7 +25537,7 @@ const F = {
   sub: (a, b) => mod(a - b),
   mul: (a, b) => mod(a * b),
   div: (a, b) => {
-    if (b === 0n) throw new Error('Division by zero in BabyJub field');
+    if (b === 0n) throw new Error("Division by zero in BabyJub field");
     return mod(a * modInverse(b));
   },
   toString: (a) => mod(a).toString(),
@@ -25562,8 +25563,8 @@ const toAffine = (point) => {
   return [F.mul(point.X, zInv), F.mul(point.Y, zInv)];
 };
 
-const A = F.e('168700');
-const D = F.e('168696');
+const A = F.e("168700");
+const D = F.e("168696");
 
 // Add two extended points (add-2008-hwcd; no per-step field inversions).
 const addExtended = (p1, p2) => {
@@ -25615,8 +25616,12 @@ class BabyJubRN {
 
   // Standard BabyJub generator used by EdDSA (matches circomlibjs Base8).
   Base8 = [
-    F.e('5299619240641551281634865583518297030282874472190772894086521144482721001553'),
-    F.e('16950150798460657717958625567821834550301663161624707787222815936182638968203'),
+    F.e(
+      "5299619240641551281634865583518297030282874472190772894086521144482721001553",
+    ),
+    F.e(
+      "16950150798460657717958625567821834550301663161624707787222815936182638968203",
+    ),
   ];
 
   // Add two affine curve points.
@@ -25640,21 +25645,31 @@ class BabyJubRN {
   }
 }
 
+const buildBabyJubRN = () => new BabyJubRN();
+
 const toBigInt = (v) => {
-    switch (typeof v) {
-      case 'bigint':  return v;
-      case 'boolean': return v ? 1n : 0n;
-      case 'number':
-        if (!Number.isInteger(v)) throw new TypeError(`Poseidon: non-integer Number ${v}`);
-        return BigInt(v);
-      case 'string': {
-        try { return BigInt(v.trim()); }
-        catch { throw new TypeError(`Poseidon: cannot parse string "${v}" as an integer`); }
+  switch (typeof v) {
+    case "bigint":
+      return v;
+    case "boolean":
+      return v ? 1n : 0n;
+    case "number":
+      if (!Number.isInteger(v))
+        throw new TypeError(`Poseidon: non-integer Number ${v}`);
+      return BigInt(v);
+    case "string": {
+      try {
+        return BigInt(v.trim());
+      } catch {
+        throw new TypeError(
+          `Poseidon: cannot parse string "${v}" as an integer`,
+        );
       }
-      default:
-        throw new TypeError(`Poseidon.F: unsupported value of type ${typeof v}`);
     }
-  };
+    default:
+      throw new TypeError(`Poseidon.F: unsupported value of type ${typeof v}`);
+  }
+};
 
 // poseidon-lite exposes `poseidon1`..`poseidon16`; wrap them in a `buildPoseidon`-shaped
 // factory (matching the WASM reference) so callers — and the existing
@@ -25662,12 +25677,13 @@ const toBigInt = (v) => {
 const buildPoseidon = () => {
   const poseidon = (inputs, initState = 0, nOut = 1) => {
     const fn = poseidonLite__namespace[`poseidon${inputs.length}`];
-    if (!fn) throw new Error(`Poseidon: arity ${inputs.length} not supported (1..16)`);
+    if (!fn)
+      throw new Error(`Poseidon: arity ${inputs.length} not supported (1..16)`);
     const formattedInputs = inputs.map((v) => toBigInt(v));
 
     if (nOut > 1) {
       const results = fn(formattedInputs, nOut);
-      return results.map(v => BigInt(v));
+      return results.map((v) => BigInt(v));
     }
 
     const res = fn(formattedInputs);
@@ -25751,10 +25767,10 @@ class EddsaRN {
 }
 
 const buildEddsaRN = async () => {
-  return new EddsaRN(new BabyJubRN(), buildPoseidon());
+  return new EddsaRN(buildBabyJubRN(), buildPoseidon());
 };
 
-exports.BabyJubRN = BabyJubRN;
+exports.buildBabyJubRN = buildBabyJubRN;
 exports.buildBabyjub = buildBabyJub;
 exports.buildEddsa = buildEddsa;
 exports.buildEddsaRN = buildEddsaRN;

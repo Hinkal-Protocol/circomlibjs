@@ -120,3 +120,5 @@ export class BabyJubRN {
     return toAffine(res);
   }
 }
+
+export const buildBabyJubRN = () => new BabyJubRN();

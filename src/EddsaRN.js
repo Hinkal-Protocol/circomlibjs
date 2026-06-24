@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 // React Native port of circomlibjs-hinkal-fork/src/eddsa.js (Poseidon EdDSA over BabyJubJub).
 import { blake512 } from '@noble/hashes/blake1.js';
-import { BabyJubRN } from './babyjubRN.js';
+import { buildBabyJubRN } from './babyjubRN.js';
 import { buildPoseidon as buildPoseidonRN } from './poseidonRN.js';
 import { mod } from './bigint-math.utils.js';
 
@@ -72,5 +72,5 @@ export class EddsaRN {
 }
 
 export const buildEddsaRN = async () => {
-  return new EddsaRN(new BabyJubRN(), buildPoseidonRN());
+  return new EddsaRN(buildBabyJubRN(), buildPoseidonRN());
 };
