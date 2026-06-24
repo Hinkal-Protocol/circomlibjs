@@ -7,7 +7,7 @@
     "import": "./main.js",
     "require": "./build/main.cjs"
   },
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Javascript library to work with circomlib",
   "scripts": {
     "test": "mocha",
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.2.0",
-    "ffjavascript": "^0.3.0"
+    "ffjavascript": "^0.3.0",
+    "poseidon-lite": "^0.3.0"
   }
 }
